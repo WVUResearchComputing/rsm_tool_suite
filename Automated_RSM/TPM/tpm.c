@@ -130,9 +130,9 @@ int main(int argc, char *argv[])
   gsl_rng_set(rr, seed);
 
   double Cd;
-  char outfilename[100];
-  char filename[100];
-  char errfilename[100];
+  char outfilename[1024];
+  char filename[1024];
+  char errfilename[1024];
  
 #if PARALLEL 
   /************* Set up number of 0 to use before processor number ****************/
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
   for(i=rank*ppN; i<(rank+1)*ppN; i++) {
     fprintf(ferror, "Umag = %e theta = %e phi = %e Ts = %e Ta = %e alphan = %e sigmat = %e\n", 
 	     LHS_Umag[i], LHS_theta[i], LHS_phi[i], LHS_Ts[i], LHS_Ta[i], LHS_An[i], LHS_St[i]);
-    
+    printf("i=%d\n",i); 
     iTOT=0;
 
     if(rank==0) {
@@ -263,6 +263,7 @@ int main(int argc, char *argv[])
   }
 #else /* PARALLEL */
 
+  printf("Loop on NUM_POINTS\n");
   for(i=0; i<NUM_POINTS; i++) {
     iTOT=0;
 
@@ -280,12 +281,14 @@ int main(int argc, char *argv[])
   fclose(fout);
 
 #if PARALLEL
+  printf("The MPI Barrier\n");
   MPI_Barrier(MPI_COMM_WORLD);
 
   /* Merge Files */
   if(rank==0) {
     for(i=0; i<nProcs; i++) {
       defzeros(i, &zeros);
+      printf("Creating Cdout_%s%d.dat\n", zeros,i);
       sprintf(outfilename, "Cdout_%s%d.dat", zeros, i);
       fout = fopen(outfilename, "r");
       while(!feof(fout)) {
@@ -332,7 +335,7 @@ int main(int argc, char *argv[])
 
   
  /******************************** READ INPUT ***************************/
-void read_input(char filename[100], int *NUM_POINTS, double X[], int *GSI_MODEL)
+void read_input(char filename[1024], int *NUM_POINTS, double X[], int *GSI_MODEL)
 {
 
   /* Read in ensemble input file */
@@ -397,7 +400,7 @@ void read_input(char filename[100], int *NUM_POINTS, double X[], int *GSI_MODEL)
 
 
 /***************************** TEST PARTICLE MONTE CARLO ***************************/ 
-double testparticle(char filename[100], double Umag, double theta, double phi, double Ts, double Ta, double epsilon, double alpha, double alphan, double sigmat, double X[], int GSI_MODEL, int iTOT)
+double testparticle(char filename[1024], double Umag, double theta, double phi, double Ts, double Ta, double epsilon, double alpha, double alphan, double sigmat, double X[], int GSI_MODEL, int iTOT)
 
 {
 
@@ -468,7 +471,9 @@ double testparticle(char filename[100], double Umag, double theta, double phi, d
   double m[NSPECIES] = {2.65676e-26, 5.31352e-26,  2.32586e-26,  4.65173e-26,  6.65327e-27,  1.67372e-27};
 
   double m_avg = 0.0;
-  
+ 
+  printf("Filename: %s\n",filename);
+ 
   for(i=0; i<NSPECIES; i++) {
     m_avg = m_avg + X[i]*m[i];
   }
@@ -527,7 +532,7 @@ double testparticle(char filename[100], double Umag, double theta, double phi, d
   proj_area = projected_area(XMIN, YMIN, ZMIN, XMAX, YMAX, ZMAX, Ux, Uy, Uz, nfacets, pfacet);
 
   /* COMPUTE SPECIES PARTICLE COUNTERS */
-  nspec[0] = (int)(NPART*X[j]);
+  nspec[0] = (int)(NPART*X[0]);
   for(j=1; j<NSPECIES; j++) {
     nspec[j] = nspec[j-1] + (int)(NPART*X[j]);
   }
@@ -714,7 +719,7 @@ double testparticle(char filename[100], double Umag, double theta, double phi, d
 
   
  /******************************** MESH READ ***************************/
-int read_num_lines(char filename[100])
+int read_num_lines(char filename[1024])
 {
 
   /* Read in the STL mesh file and determine number of lines*/
@@ -747,7 +752,7 @@ int read_num_lines(char filename[100])
 
 
 /******************************** FACET PROPERTIES ***************************/
-void facet_properties(char filename[100], double Ux, double Uy, double Uz, int nfacets, struct facet_struct *pfacet, 
+void facet_properties(char filename[1024], double Ux, double Uy, double Uz, int nfacets, struct facet_struct *pfacet, 
 		      double Umag)
 {
 

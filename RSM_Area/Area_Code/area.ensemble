@@ -1,5 +1,5 @@
 Number of Ensemble Members          # 27931
-Mesh Filename                       # /net/toaster/u/awalker/RSM_Area/Area_Code/Mesh_Files/CYGNSS_final_ascii.stl
+Mesh Filename                       # /gpfs20/scratch/pls0013/Original_RSM_Suite/rsm_tool_suite-master/RSM_Area/Area_Code/Mesh_Files/Simple_Sphere.stl
 Umag [m/s]      theta [radians]     phi [radians]
 7500.0          0.0000000000e+00          0.0000000000e+00
 7500.0          1.7453292520e-03          0.0000000000e+00

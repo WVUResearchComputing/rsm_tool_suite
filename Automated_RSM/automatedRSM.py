@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import math
 import os
 import numpy as np
@@ -172,13 +174,13 @@ def lhs_ensemble(tpmdir, xmin, xmax, NENS, GSI_MODEL):
 def run_tpmc(NPROCS, speciesnames, ispec, rtype, outdir):
 
     #RUN THE CODE
-    print "Starting simulation for "+speciesnames[ispec]+" "+rtype+" set\n"
+    print("Starting simulation for "+speciesnames[ispec]+" "+rtype+" set\n")
     cmd = "mpiexec -n "+str(NPROCS)+" ./tpm"
     os.system(cmd)
 
     #COPY THE OUTPUT TO A NEW FILE
-    print "Copying output data\n"
-    outname = "CYGNSS_"+speciesnames[ispec]+"_"+rtype+"_set.dat"
+    print("Copying output data\n")
+    outname = "Sphere_"+speciesnames[ispec]+"_"+rtype+"_set.dat"
     outpath = os.path.join(outdir, outname)
     cmd = 'cp Cdout.dat "'+outpath+'"'
     os.system(cmd)
@@ -273,8 +275,8 @@ if __name__ == '__main__':
     
     ####################### INPUTS ##########################
     NENS = 1000             #NUMBER OF ENSEMBLE MEMBERS
-    NPROCS = 20             #NUMBER OF PROCESSORS FOR SIMULATION
-    RSMNAME = "CYGNSS"      #NAME OF OUTPUT RSM FILE
+    NPROCS = 40             #NUMBER OF PROCESSORS FOR SIMULATION
+    RSMNAME = "Sphere"      #NAME OF OUTPUT RSM FILE
 
     ##################### START CODE ########################
 

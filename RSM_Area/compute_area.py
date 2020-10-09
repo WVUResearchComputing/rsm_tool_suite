@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+
 import math
 import os
 import numpy as np
@@ -96,9 +99,9 @@ if __name__ == '__main__':
     
     ########## INPUT VARIABLES ##########
 
-    MESHNAME = "CYGNSS_final_ascii.stl"   #MESH FILENAME
-    SATNAME = "CYGNSS"                    #SATELLITE NAME
-    NPROCS = 30                           #NUMBER OF PROCESSORS
+    MESHNAME = "Simple_Sphere.stl"   #MESH FILENAME
+    SATNAME = "Sphere"                    #SATELLITE NAME
+    NPROCS = 40                           #NUMBER OF PROCESSORS
 
     dphi = 0.1                            #PITCH ANGLE RESOLUTION (IN DEGREES)
     dtheta = 0.1                          #YAW ANGLE RESOLUTION (IN DEGREES)

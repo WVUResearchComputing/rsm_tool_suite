@@ -1,8 +1,5 @@
 # rsm_tool_suite
 
-Hey Guillermo
-
-
 Each code has its own README that explains its use. The following is a short description of each code:
 
 The Response Surface Modeling (RSM) Tool Suite is a collection of three codes used to generate an empirical interpolation function for a collection of drag coefficient calculations computed with Test Particle Monte Carlo (TPMC) simulations.

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # s=lhsu(xmin,xmax,nsample)
 # LHS from uniform distribution
 # Input:

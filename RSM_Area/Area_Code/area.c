@@ -58,8 +58,8 @@ int main(int argc, char *argv[])
 #endif /* PARALLEL */
 
   double A;
-  char outfilename[100];
-  char meshfilename[100];
+  char outfilename[1024];
+  char meshfilename[1024];
   int NUM_POINTS = 0;
 
   char *temp;

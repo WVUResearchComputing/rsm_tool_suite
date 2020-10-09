@@ -1,5 +1,5 @@
-Mesh Filename							# ../Mesh_Files/CYGNSS_final_ascii.stl
-Number of Ensemble Points					# 100
+Mesh Filename							# geometry.stl
+Number of Ensemble Points					# 1000
 Gas Surface Interaction Model                              	# 2
 Species Mole Fractions : X = [O, O2, N, N2, He, H]	   	#  0.000000 0.000000 0.000000 0.000000 0.000000 1.000000
 **************************************************************** MIN		MAX *****************

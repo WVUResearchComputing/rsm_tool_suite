@@ -4,7 +4,7 @@ p = 7;
 pvec = 2501:12500;
 
 % Gather some stuff together
-M = 100;
+M = 1000;
 x = zeros(M, p, length(species));
 xmin = zeros(length(species), p);
 xrange = zeros(length(species), p);
