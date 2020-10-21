@@ -286,4 +286,4 @@ if __name__ == '__main__':
     tpmc_loop(NPROCS, NENS, mcmcdir, tpmdir)   #Run TPMC test and training sets
     run_mcmc(mcmcdir)                          #Run MCMC fitting to data
     move_output(RSMNAME, basedir, mcmcdir)     #Move final output to base directory
-    tpm_cleanup(tpmdir)                        #Cleanup TPMC diagnostic files (Again)
+   # tpm_cleanup(tpmdir)                        #Cleanup TPMC diagnostic files (Again)

@@ -1,6 +1,6 @@
 #CC = cc
-CC = mpicc
-CFLAGS = -g -pg -O0 -std=c99
+CC = mpiicc
+CFLAGS = -g -p -O3 -parallel -std=c99 -march=skylake-avx512
 #CFLAGS = -Wall -pedantic -g -std=c99
 LIBS = -lm -lgsl -lgslcblas
 
@@ -17,3 +17,5 @@ clean:
 
 clean_data:
 	rm -rf  Cdout* tpmout* core.*
+
+clean_all: clean clean_data

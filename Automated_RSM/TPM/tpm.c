@@ -35,10 +35,10 @@
 #define NSURF     6          /* NUMBER OF DOMAIN SURFACES */
 #define NSPECIES  6          /* NUMBER OF ATMOSPHERIC SPECIES */
 #define NCELLS    100        /* MAXIMUM NUMBER OF CELLS IN 1-DIMENSION  */
-#define MAXCELLS  10*NCELLS  /* MAXIMUM NUMBER OF ENTRIES IN PARTICLE-CELL TRACKING ARRAY */
+#define MAXCELLS  100*NCELLS  /* MAXIMUM NUMBER OF ENTRIES IN PARTICLE-CELL TRACKING ARRAY */
 #define MAXFACETS 5000       /* MAXIMUM NUMBER OF FACETS THAT CAN BE IN A SINGLE CELL */
 #define NITER     100        /* NUMBER OF SEGMENTS TO BREAK UP FACET EDGES INTO FOR ITERATION */
-
+#define MAXCOUNT  100
 
 struct particle_struct {
   double pos[3];
@@ -159,8 +159,18 @@ int main(int argc, char *argv[])
 #endif /* PARALLEL */
 
   FILE *fout = fopen(outfilename, "w");
+  if(fout == NULL)
+  {
+	printf("Error opening %s\n",outfilename);  
+  	exit(1);
+  }
 #if PARALLEL
   FILE *ftot = fopen("Cdout.dat", "w");
+  if(ftot == NULL)
+  {
+	printf("Error opening %s\n","Cdout.dat");  
+  	exit(1);
+  }
 #endif /* PARALLEL */
   
   double X[NSPECIES] = {1.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -169,7 +179,9 @@ int main(int argc, char *argv[])
   int i;
 
 #if PARALLEL
-  double ppN;          /* Particles per processor */
+  // Must never be a double
+  //double ppN;          /* Particles per processor */
+  int ppN;
 #endif /* PARALLEL */
 
   int pc, iTOT;
@@ -191,6 +203,11 @@ int main(int argc, char *argv[])
 
   /* Open ensemble file */
   FILE *lhs_file = fopen("./tpm.ensemble", "r");
+  if(lhs_file == NULL)
+  {
+	printf("Error opening %s\n","tpm.ensemble");  
+  	exit(1);             
+  }
 
   /* Read header */
   fgets(line, 1024, lhs_file);
@@ -213,7 +230,17 @@ int main(int argc, char *argv[])
 
 
 #if PARALLEL
-  ppN = (double)NUM_POINTS/(double)nProcs;
+  if (NUM_POINTS%nProcs==0) {
+     ppN = NUM_POINTS/nProcs;
+     if(rank==0) {
+       printf("NUM_POINTS=%d nProcs=%d ppN=%d\n", NUM_POINTS, nProcs, ppN);
+     }
+  }
+  else
+  {
+    printf("ERROR: The number of points is not integer divisible by the number MPI processes");
+    exit(1);
+  }
 #endif /* PARALLEL */
 
 
@@ -236,24 +263,34 @@ int main(int argc, char *argv[])
   }
   sprintf(errfilename, "tpmout_%s_%s%d_%ld.dat", speciesname, zeros, rank, seed);
   FILE *ferror = fopen(errfilename, "w");
+  if(ferror == NULL)
+  {
+	printf("Error opening %s\n",errfilename);  
+  	exit(1);             
+  }
+
+
   fprintf(ferror, "seed = %ld\n", seed);
  
 
   for(i=rank*ppN; i<(rank+1)*ppN; i++) {
     fprintf(ferror, "Umag = %e theta = %e phi = %e Ts = %e Ta = %e alphan = %e sigmat = %e\n", 
 	     LHS_Umag[i], LHS_theta[i], LHS_phi[i], LHS_Ts[i], LHS_Ta[i], LHS_An[i], LHS_St[i]);
-    printf("i=%d\n",i); 
-    iTOT=0;
 
+    iTOT=0;
     if(rank==0) {
-      if((int)(100*i/ppN) % 1 == 0 && (int)(100*i/ppN)/1 > 0) {
-	printf("%d percent complete\r", (int)(100*i/ppN));
-      }
+      printf("i=%d\n",i);
+      // WARNING: ppN is now Integer the resulting division will be integer too 
+      //if((int)(100*i/ppN) % 1 == 0 && (int)(100*i/ppN)/1 > 0) {
+	//printf("%d percent complete\r", (int)(100*i/ppN));
+      //}
     }
-    
+
+    if(rank>-1) {    
     Cd = testparticle(filename, LHS_Umag[i], LHS_theta[i], LHS_phi[i], LHS_Ts[i], LHS_Ta[i], LHS_Ep[i], \
 		      LHS_Al[i], LHS_An[i], LHS_St[i], X, GSI_MODEL, iTOT);
 
+    }
     fprintf(ferror, "Simulation Complete\n");
 
     fprintf(fout, "%e %e %e %e %e %e %e %e\n", 
@@ -281,7 +318,7 @@ int main(int argc, char *argv[])
   fclose(fout);
 
 #if PARALLEL
-  printf("The MPI Barrier\n");
+  printf("[rank=%d] MPI Barrier\n", rank);
   MPI_Barrier(MPI_COMM_WORLD);
 
   /* Merge Files */
@@ -291,6 +328,12 @@ int main(int argc, char *argv[])
       printf("Creating Cdout_%s%d.dat\n", zeros,i);
       sprintf(outfilename, "Cdout_%s%d.dat", zeros, i);
       fout = fopen(outfilename, "r");
+      if(fout == NULL)
+      {
+	printf("Error opening %s\n",outfilename);  
+  	exit(1);             
+      }
+
       while(!feof(fout)) {
 	if(fgets(line, 1024, fout)) {
 	  fprintf(ftot, line);
@@ -343,6 +386,12 @@ void read_input(char filename[1024], int *NUM_POINTS, double X[], int *GSI_MODEL
   /* Output: Ensemble parameters */
 
   FILE *f = fopen("tpm.inp", "r");
+  if(f == NULL)
+  {
+	printf("Error opening %s\n","tpm.inp");  
+  	exit(1);             
+  }
+
   char line[1024];
   char *temp;
   char *data;
@@ -471,9 +520,7 @@ double testparticle(char filename[1024], double Umag, double theta, double phi, 
   double m[NSPECIES] = {2.65676e-26, 5.31352e-26,  2.32586e-26,  4.65173e-26,  6.65327e-27,  1.67372e-27};
 
   double m_avg = 0.0;
- 
-  printf("Filename: %s\n",filename);
- 
+  
   for(i=0; i<NSPECIES; i++) {
     m_avg = m_avg + X[i]*m[i];
   }
@@ -674,7 +721,7 @@ double testparticle(char filename[1024], double Umag, double theta, double phi, 
 	
 	}
 
-	if(scount>10000) {
+	if(scount>MAXCOUNT) {
 	  printf("Problem! Particle #%d has hit the satellite surface %d times!\n", ipart, scount);
 	}
 
@@ -730,7 +777,12 @@ int read_num_lines(char filename[1024])
   int num_lines = 0;
   int ch;
   FILE *f = fopen(filename, "r");
-  
+  if(f == NULL)
+  {
+	printf("Error opening %s\n",filename);  
+  	exit(1);             
+  }
+
   /*Check that file exists*/
   if(!f) {
     printf("Mesh File does not exist\n");
@@ -766,6 +818,12 @@ void facet_properties(char filename[1024], double Ux, double Uy, double Uz, int 
   /*         Vertex3 [z, y, z] */
 
   FILE *f = fopen(filename, "r");
+  if(f == NULL)
+  {
+	printf("Error opening %s\n",filename);  
+  	exit(1);             
+  }
+
 
   /* READ IN STL FILE HEADER */
   char header[1024];
@@ -1886,7 +1944,7 @@ void cell_track(struct particle_struct *pparticle, int ipart, struct cell_struct
 
     counter++;
 
-    if(counter==10*NCELLS) {
+    if(counter==MAXCELLS) {
 	break;
     }
 
@@ -2002,7 +2060,37 @@ void compile_facet_list(struct facet_struct *pfacet, int nfacets, struct cell_st
     ipf=0;
     cell_number = particle_cell_track[icell];
     cell = pcell + cell_number;
-    
+
+    if (cell_number>10000){
+       printf("icell=%d\n",icell);
+       printf("cell_number=%d\n",cell_number);
+       printf("nfacets=%d\n", nfacets);
+       printf("fcount=%d\n", fcount);
+       printf("ipart=%d\n", ipart);
+       printf("MAXCELLS=%d\n",MAXCELLS);
+       for(i=icell-10;i<MAXCELLS;i++){
+          printf("%d : %d\n", i, particle_cell_track[i]);
+       }
+       if (icell>=MAXCELLS){
+        printf("ERROR: icell was beyond MAXCELLS, this will crash...");
+       }
+    }
+
+    // DEBUGGER MENTION ERROR with while(cell->facet_list[ipf] >=0) {
+    //
+    //
+    if (cell->facet_list)
+    {
+    //printf("cell->facet_list[0]=%d\n", cell->facet_list[0]);
+    // Proceed
+    }
+    else
+    {
+    printf("ERROR:Null pointer for cell->facet_list");
+    exit(1);
+    // Handle null-pointer error
+   }
+    //printf("cell_number=%d\n",cell_number);
     while(cell->facet_list[ipf] >=0) {
       for(i=0; i<*fcount; i++) {
 	if(total_facet_list[i]==cell->facet_list[ipf]) {
