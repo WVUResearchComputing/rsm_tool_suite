@@ -17,7 +17,7 @@ import json
 
 
 def regression_model(base_folder):
-
+    #os.chdir('..')
     inputpath = (base_folder+os.sep+"Inputs/Simulation.json")
     rf=open(inputpath)
     md=json.load(rf)
@@ -25,10 +25,10 @@ def regression_model(base_folder):
     GSI_MODEL = md['Gas Surface Interaction Model (1=DRIA,2=CLL)']
 
 
-    if GSI_MODEL ==1:
-        Model_ones = np.ones(6)
-    elif GSI_MODEL ==2:
-        Model_ones = np.ones(7)
+    # if GSI_MODEL ==1:
+    #     Model_ones = np.ones(6)
+    # elif GSI_MODEL ==2:
+    #     Model_ones = np.ones(7)
 
     # Loading training data
     file_train_H  =     np.loadtxt("./Outputs/RSM_Regression_Models/data/Training Set/" + RSMNAME + "_H_training_set.dat" )
@@ -45,6 +45,34 @@ def regression_model(base_folder):
     file_test_N2  = np.loadtxt("./Outputs/RSM_Regression_Models/data/Test Set/" + RSMNAME +"_N2_test_set.dat")
     file_test_O   = np.loadtxt("./Outputs/RSM_Regression_Models/data/Test Set/" + RSMNAME +"_O_test_set.dat")
     file_test_O2  = np.loadtxt("./Outputs/RSM_Regression_Models/data/Test Set/" + RSMNAME +"_O2_test_set.dat")
+
+    species = ['H','He','N','N2','O','O2']
+
+    # checking if there is a column of all zeros 
+    zerostd_H_col = np.where(~file_train_H.any(axis=0))[0]
+    
+    file_train_H  = np.delete(file_train_H, zerostd_H_col,axis=1)
+    file_train_He = np.delete(file_train_He,zerostd_H_col,axis=1)
+    file_train_N  = np.delete(file_train_N, zerostd_H_col,axis=1)
+    file_train_N2 = np.delete(file_train_N2,zerostd_H_col,axis=1)
+    file_train_O  = np.delete(file_train_O, zerostd_H_col,axis=1)
+    file_train_O2 = np.delete(file_train_O2,zerostd_H_col,axis=1)
+    
+    
+    file_test_H  = np.delete(file_test_H, zerostd_H_col,axis=1)
+    file_test_He = np.delete(file_test_He,zerostd_H_col,axis=1)
+    file_test_N  = np.delete(file_test_N, zerostd_H_col,axis=1)
+    file_test_N2 = np.delete(file_test_N2,zerostd_H_col,axis=1)
+    file_test_O  = np.delete(file_test_O, zerostd_H_col,axis=1)
+    file_test_O2 = np.delete(file_test_O2,zerostd_H_col,axis=1)
+    
+    
+    
+    
+    Model_ones = np.ones(len(file_train_H[0])-1)
+    
+ 
+
 
 
     # Training x vector
@@ -259,7 +287,25 @@ def regression_model(base_folder):
     plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_datasets_H_Matern2.png", dpi=1200)
          
     with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_H_matern2.pkl', 'wb') as file_GP_reg_GRACEH_matern2:
-        pickle.dump(gp_H_matern2, file_GP_reg_GRACEH_matern2)     
+        pickle.dump(gp_H_matern2, file_GP_reg_GRACEH_matern2)    
+        
+    plt.figure()
+    plt.plot(y_test_H,y_pred_H_matern2,'bo',markerfacecolor='none')
+    xpoints = ypoints = plt.xlim()
+    plt.plot(xpoints, ypoints, linestyle='--', color='r', lw=3, scalex=False, scaley=False)
+    plt.grid()
+    plt.xlabel('Test Data H')
+    plt.ylabel('Predicted Data')
+    plt.title('GPR Results for '+ RSMNAME +' model, H using Matern kernel (nu=2.5)')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_GPRresults_H_Matern2.png", dpi=120)
+     
+    plt.figure()
+    residual_H = y_test_H - y_pred_H_matern2
+    plt.hist(residual_H)
+    plt.title('Residual of H GPR Test Set Comparison' )
+    plt.xlabel('Test Set Residuals')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_residuals_H_Matern2.png", dpi=120)
+        
         
     ########################################################################    
     #############################   Helium   ###############################
@@ -295,11 +341,28 @@ def regression_model(base_folder):
     plt.xlabel('Test Data Number')
     plt.ylabel('$C_d$')
     plt.grid()
-    plt.savefig(base_folder+os.sep+"Outputs/RSM_Regression_Models/Plots_Output/"+RSMNAME+"_datasets_He_Matern2.png", dpi=1200)
+    plt.savefig(base_folder+os.sep+"Outputs/RSM_Regression_Models/Plots_Output/"+RSMNAME+"_datasets_He_Matern2.png", dpi=120)
 
+    plt.figure()
+    plt.plot(y_test_He,y_pred_He_matern2,'bo',markerfacecolor='none')
+    xpoints = ypoints = plt.xlim()
+    plt.plot(xpoints, ypoints, linestyle='--', color='r', lw=3, scalex=False, scaley=False)
+    plt.grid()
+    plt.xlabel('Test Data He')
+    plt.ylabel('Predicted Data')
+    plt.title('GPR Results for '+ RSMNAME +' model, He using Matern kernel (nu=2.5)')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_GPRresults_He_Matern2.png", dpi=120)
+     
+    plt.figure()
+    residual_He = y_test_He - y_pred_He_matern2
+    plt.hist(residual_He)
+    plt.title('Residual of He GPR Test Set Comparison' )
+    plt.xlabel('Test Set Residuals')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_residuals_He_Matern2.png", dpi=120)
+    
           
-    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_He_matern2.pkl', 'wb') as file_GP_reg_GRACEH_matern2:
-        pickle.dump(gp_H_matern2, file_GP_reg_GRACEH_matern2)    
+    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_He_matern2.pkl', 'wb') as file_GP_reg_GRACEHe_matern2:
+        pickle.dump(gp_He_matern2, file_GP_reg_GRACEHe_matern2)    
 
     ########################################################################    
     ############################   Nitrogen   ##############################
@@ -324,7 +387,7 @@ def regression_model(base_folder):
     for j in range(0,len(y_pred_N_matern2)):
         rmspe_sum = rmspe_sum + (((y_pred_N_matern2[j]-y_test_N[j])/y_test_N[j])*100)**2
     rmspe_N_matern2 = np.sqrt(rmspe_sum/len(y_pred_N_matern2))
-    # Plot tN observation, prediction, and tN 3-sigma error bounds
+     # Plot tN observation, prediction, and tN 3-sigma error bounds
     x = np.atleast_2d(np.linspace(1, int(len(x_test_N)), int(len(x_test_N)))).T
     plt.figure()
     plt.plot(x, y_test_N[0:int(len(x_test_N))], 'r.', label='Observations')
@@ -336,11 +399,27 @@ def regression_model(base_folder):
     plt.xlabel('Test Data Number')
     plt.ylabel('$C_d$')
     plt.grid()
-    plt.savefig(base_folder+os.sep+"Outputs/RSM_Regression_Models/Plots_Output/"+RSMNAME+"_datasets_N_Matern2.png", dpi=1200)
+    plt.savefig(base_folder+os.sep+"Outputs/RSM_Regression_Models/Plots_Output/"+RSMNAME+"_datasets_N_Matern2.png", dpi=120)
 
+    plt.figure()
+    plt.plot(y_test_N,y_pred_N_matern2,'bo',markerfacecolor='none')
+    xpoints = ypoints = plt.xlim()
+    plt.plot(xpoints, ypoints, linestyle='--', color='r', lw=3, scalex=False, scaley=False)
+    plt.grid()
+    plt.xlabel('Test Data N')
+    plt.ylabel('Predicted Data')
+    plt.title('GPR Results for '+ RSMNAME +' model, N using Matern kernel (nu=2.5)')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_GPRresults_N_Matern2.png", dpi=120)
      
-    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_N_matern2.pkl', 'wb') as file_GP_reg_GRACEH_matern2:
-        pickle.dump(gp_H_matern2, file_GP_reg_GRACEH_matern2)     
+    plt.figure()
+    residual_N = y_test_N - y_pred_N_matern2
+    plt.hist(residual_N)
+    plt.title('Residual of N GPR Test Set Comparison' )
+    plt.xlabel('Test Set Residuals')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_residuals_N_Matern2.png", dpi=120)
+     
+    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_N_matern2.pkl', 'wb') as file_GP_reg_GRACEN_matern2:
+        pickle.dump(gp_N_matern2, file_GP_reg_GRACEN_matern2)       
           
     ########################################################################    
     ##########################   Nitrogen  - 2  ############################
@@ -364,7 +443,7 @@ def regression_model(base_folder):
     for j in range(0,len(y_pred_N2_matern2)):
         rmspe_sum = rmspe_sum + (((y_pred_N2_matern2[j]-y_test_N2[j])/y_test_N2[j])*100)**2
     rmspe_N2_matern2 = np.sqrt(rmspe_sum/len(y_pred_N2_matern2))
-    # Plot tN2 observation, prediction, and tN2 3-sigma error bounds
+     # Plot tN2 observation, prediction, and tN2 3-sigma error bounds
     x = np.atleast_2d(np.linspace(1, int(len(x_test_N2)), int(len(x_test_N2)))).T
     plt.figure()
     plt.plot(x, y_test_N2[0:int(len(x_test_N2))], 'r.', label='Observations')
@@ -376,11 +455,28 @@ def regression_model(base_folder):
     plt.xlabel('Test Data Number')
     plt.ylabel('$C_d$')
     plt.grid()
-    plt.savefig(base_folder+os.sep+"Outputs/RSM_Regression_Models/Plots_Output/"+RSMNAME+"_datasets_N2_Matern2.png", dpi=1200)
+    plt.savefig(base_folder+os.sep+"Outputs/RSM_Regression_Models/Plots_Output/"+RSMNAME+"_datasets_N2_Matern2.png", dpi=120)
 
+    plt.figure()
+    plt.plot(y_test_N2,y_pred_N2_matern2,'bo',markerfacecolor='none')
+    xpoints = ypoints = plt.xlim()
+    plt.plot(xpoints, ypoints, linestyle='--', color='r', lw=3, scalex=False, scaley=False)
+    plt.grid()
+    plt.xlabel('Test Data N')
+    plt.ylabel('Predicted Data')
+    plt.title('GPR Results for '+ RSMNAME +' model, N2 using Matern kernel (nu=2.5)')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_GPRresults_N2_Matern2.png", dpi=120)
+     
+    plt.figure()
+    residual_N2 = y_test_N2 - y_pred_N2_matern2
+    plt.hist(residual_N2)
+    plt.title('Residual of N2 GPR Test Set Comparison' )
+    plt.xlabel('Test Set Residuals')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_residuals_N2_Matern2.png", dpi=120)
+    
 
-    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_N2_matern2.pkl', 'wb') as file_GP_reg_GRACEH_matern2:
-        pickle.dump(gp_H_matern2, file_GP_reg_GRACEH_matern2) 
+    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_N2_matern2.pkl', 'wb') as file_GP_reg_GRACEN2_matern2:
+        pickle.dump(gp_N2_matern2, file_GP_reg_GRACEN2_matern2) 
         
     ########################################################################    
     #############################   Oxygen   ###############################
@@ -416,10 +512,27 @@ def regression_model(base_folder):
     plt.xlabel('Test Data Number')
     plt.ylabel('$C_d$')
     plt.grid()
-    plt.savefig(base_folder+os.sep+"Outputs/RSM_Regression_Models/Plots_Output/"+RSMNAME+"_datasets_O_Matern2.png", dpi=1200)
+    plt.savefig(base_folder+os.sep+"Outputs/RSM_Regression_Models/Plots_Output/"+RSMNAME+"_datasets_O_Matern2.png", dpi=120)
 
-    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_O_matern2.pkl', 'wb') as file_GP_reg_GRACEH_matern2:
-        pickle.dump(gp_H_matern2, file_GP_reg_GRACEH_matern2)      
+    plt.figure()
+    plt.plot(y_test_O,y_pred_O_matern2,'bo',markerfacecolor='none')
+    xpoints = ypoints = plt.xlim()
+    plt.plot(xpoints, ypoints, linestyle='--', color='r', lw=3, scalex=False, scaley=False)
+    plt.grid()
+    plt.xlabel('Test Data O')
+    plt.ylabel('Predicted Data')
+    plt.title('GPR Results for '+ RSMNAME +' model, O using Matern kernel (nu=2.5)')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_GPRresults_O_Matern2.png", dpi=120)
+     
+    plt.figure()
+    residual_O = y_test_O - y_pred_O_matern2
+    plt.hist(residual_O)
+    plt.title('Residual of O GPR Test Set Comparison' )
+    plt.xlabel('Test Set Residuals')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_residuals_O_Matern2.png", dpi=120)
+    
+    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_O_matern2.pkl', 'wb') as file_GP_reg_GRACEO_matern2:
+        pickle.dump(gp_O_matern2, file_GP_reg_GRACEO_matern2)        
         
         
     ########################################################################    
@@ -444,7 +557,7 @@ def regression_model(base_folder):
     for j in range(0,len(y_pred_O2_matern2)):
         rmspe_sum = rmspe_sum + (((y_pred_O2_matern2[j]-y_test_O2[j])/y_test_O2[j])*100)**2
     rmspe_O2_matern2 = np.sqrt(rmspe_sum/len(y_pred_O2_matern2))
-    # Plot tO2 observation, prediction, and tO2 3-sigma error bounds
+     # Plot tO2 observation, prediction, and tO2 3-sigma error bounds
     x = np.atleast_2d(np.linspace(1, int(len(x_test_O2)), int(len(x_test_O2)))).T
     plt.figure()
     plt.plot(x, y_test_O2[0:int(len(x_test_O2))], 'r.', label='Observations')
@@ -456,11 +569,27 @@ def regression_model(base_folder):
     plt.xlabel('Test Data Number')
     plt.ylabel('$C_d$')
     plt.grid()
-    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_datasets_O2_Matern2.png", dpi=1200)
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_datasets_O2_Matern2.png", dpi=120)
 
-
-    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_O2_matern2.pkl', 'wb') as file_GP_reg_GRACEH_matern2:
-        pickle.dump(gp_H_matern2, file_GP_reg_GRACEH_matern2)
+    plt.figure()
+    plt.plot(y_test_O2,y_pred_O2_matern2,'bo',markerfacecolor='none')
+    xpoints = ypoints = plt.xlim()
+    plt.plot(xpoints, ypoints, linestyle='--', color='r', lw=3, scalex=False, scaley=False)
+    plt.grid()
+    plt.xlabel('Test Data O2')
+    plt.ylabel('Predicted Data')
+    plt.title('GPR Results for '+ RSMNAME +' model, O2 using Matern kernel (nu=2.5)')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_GPRresults_O2_Matern2.png", dpi=120)
+     
+    plt.figure()
+    residual_O2 = y_test_O2 - y_pred_O2_matern2
+    plt.hist(residual_O2)
+    plt.title('Residual of O2 GPR Test Set Comparison' )
+    plt.xlabel('Test Set Residuals')
+    plt.savefig(base_folder+os.sep+'Outputs/RSM_Regression_Models/Plots_Output/'+RSMNAME+"_residuals_O2_Matern2.png", dpi=120)
+    
+    with open(base_folder+os.sep+'Outputs/RSM_Regression_Models/'+RSMNAME+'_GP_reg_O2_matern2.pkl', 'wb') as file_GP_reg_GRACEO2_matern2:
+        pickle.dump(gp_O2_matern2, file_GP_reg_GRACEO2_matern2)  
 
 
 if __name__ == "__main__":

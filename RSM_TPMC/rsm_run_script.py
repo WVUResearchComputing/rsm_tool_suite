@@ -106,8 +106,6 @@ def read_input(inputdir,meshdir,compdir, D2R):
     NENS = md['Number of Ensemble Points']
     NPROCS = md['Number of Processors to be used']
     RSMNAME = md['Object Name']
-    dtheta =md['Yaw Angle Resolution']
-    dphi = md['Pitch Angle Resolution']
     GSI_MODEL = md['Gas Surface Interaction Model (1=DRIA,2=CLL)']
     Rotation = md['Component Rotation (1=No,2=Yes)']    
     ComponentRotation = md['Component Rotation Min/Max']  
@@ -185,7 +183,7 @@ def read_input(inputdir,meshdir,compdir, D2R):
     xmax[2] *= D2R
 
 
-    return xmin, xmax, dtheta, dphi, GSI_MODEL, NENS, NPROCS, RSMNAME, Rotation
+    return xmin, xmax, GSI_MODEL, NENS, NPROCS, RSMNAME, Rotation
 
 ##################### MODIFY INPUT PARAMETERS for tpm.c #######################
 def modify_input(RSMNAME,GSI_MODEL,Rotation,tpmdir, species, D2R):
@@ -283,6 +281,111 @@ def run_tpmc(path4tpm, NPROCS, speciesnames, ispec, rtype, outdir, RSMNAME):
     cmd = 'cp tempfiles/Cdout.dat "'+outpath+'"'
     os.system(cmd)
 
+    print("Copying area output data\n")
+    areaoutname = RSMNAME+"_"+speciesnames[ispec]+"_"+rtype+"_area.dat"
+    areaoutpath = os.path.join('Outputs/Projected_Area/', areaoutname)
+    cmd = 'cp Outputs/Projected_Area/Aout.dat "'+areaoutpath+'"'
+    os.system(cmd)
+
+
+
+################ ADD ROTATION INFO TO TEST/TRAINING DATA #####################
+def rotation_data(rtype,GSI_MODEL,NENS):  #function created by Logan Sheridan at WVU
+    """
+    This function is to save the rotation information from the LHS into the 
+    training and test data
+
+
+    Parameters
+    ----------
+    rtype : training or test data.
+    GSI_MODEL: gsi model being used 
+    NENS : number of ensemble points 
+    Returns
+    -------
+    None.
+
+    """
+
+    species = ['H','He','O','O2','N','N2']
+    
+    
+    if GSI_MODEL == 1:
+        gsi_col = 6
+    elif GSI_MODEL ==2:
+        gsi_col = 7
+        
+    
+    for n in range(len(species)):
+    
+    
+        values=[]
+        areafile = "Outputs/Projected_Area/"+RSMNAME+"_"+species[n]+"_"+rtype+"_area.dat"
+        fcount = open(areafile,'r')
+        line_count =0
+        for i in fcount:
+            if i != "\n":
+                line_count += 1
+        fcount.close()
+        
+        f = open(areafile,'r')
+        j=0
+        for line in f: 
+            
+            data = line.split()
+            floats = []
+            for elem in data:
+                try:
+                    floats.append(float(elem))
+                except ValueError:
+                    pass
+            if j == 0:
+                columns = len(floats)
+                values = np.zeros([line_count,columns])
+            values[j,:] = np.array(floats)
+            j+= 1
+    
+        f.close()
+         
+    
+        points = values[:,1:]
+        
+   
+        ROTATION_VALUES = points[:,2:]
+        
+        columns = gsi_col + len(ROTATION_VALUES[0]) +1
+        new_data = np.ones([NENS,columns])
+                                 
+        if rtype == "training":
+            ftype ="Training"
+        elif rtype =="test":
+            ftype="Test"
+        
+        
+        tpmcdata = np.loadtxt("Outputs/RSM_Regression_Models/data/"+ftype+" Set/"+RSMNAME+"_"+species[n]+"_"+rtype+"_set.dat")
+
+        lhs = tpmcdata[:,:-1] #all columns except last 
+        cd = tpmcdata[:,-1] #last column 
+ 
+        new_data[:,:gsi_col] = lhs
+        new_data[:,(gsi_col):-1] = ROTATION_VALUES
+        new_data[:,-1] =cd
+        
+        #overwrite old data to include the rotations in test and training data
+        np.savetxt("Outputs/RSM_Regression_Models/data/"+ftype+" Set/"+RSMNAME+"_"+species[n]+"_"+rtype+"_set.dat",new_data)
+
+
+
+###################### MAKE FILE WITH ALL AREA INFO ###########################
+def total_areafile(RSMNAME):     #function created by Logan Sheridan at WVU
+    outfilename = 'Outputs/Projected_Area/Area_Total.dat'
+    with open(outfilename, 'w') as outfile:
+        for filename in glob.glob('Outputs/Projected_Area/'+RSMNAME+'*.dat'):
+            if filename == outfilename:
+                # don't want to copy the output into the output
+                continue
+            with open(filename, 'r') as readfile:
+                outfile.write(readfile.read())
 
 
 ############### LOOP OVER TEST/TRAINING AND MOLE FRACTIONS ##############
@@ -343,6 +446,12 @@ def tpmc_loop(path4tpm, NPROCS, NENS,GSI_MODEL,Rotation, xmin,xmax, regdir, tpmd
             #Run TPMC code
             run_tpmc(path4tpm, NPROCS, speciesnames, ispec, rtype, outdir, RSMNAME)
            
+#If rotation is being performed, then the test and training data needs to include all componente rotation values       
+    if Rotation ==2:
+                rotation_data(rtype,GSI_MODEL,NENS)       
+    
+    total_areafile(RSMNAME)
+            
 #################### ROTATE COMPONENTS OF SATELLITE# #########################
 def runRotation(rotationpath):
     print("Rotation Path:" + rotationpath)
@@ -423,7 +532,7 @@ if __name__ == '__main__':
     
     ####################### INPUTS ##########################
     print("Reading input files...")
-    xmin, xmax, dtheta, dphi, GSI_MODEL, NENS, NPROCS, RSMNAME, Rotation = read_input(inputdir,meshdir,compdir, D2R)
+    xmin, xmax, GSI_MODEL, NENS, NPROCS, RSMNAME, Rotation = read_input(inputdir,meshdir,compdir, D2R)
                                             
     ################### START CODE ########################
     

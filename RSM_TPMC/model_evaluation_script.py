@@ -15,7 +15,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C, RationalQuadratic as RQ, WhiteKernel, ExpSineSquared as Exp, DotProduct as Lin
 from sklearn.metrics import mean_squared_error
 from sklearn.gaussian_process.kernels import Matern 
-
+from projected_area import area
 
 def read_input_info(basedir):
     #os.chdir('..')
@@ -128,8 +128,8 @@ def CdSetup(MODEL_NAME,GSI_MODEL,ads_model,surf_part_mass,Inputs,mole_frac,datal
         
         #Emulator 
         print('Beginning Emulator')
-        Cd_ads = emu(ads_inputDRIA,MODEL_NAME,mole_frac,datalength,m_avg)
-        Cd_srf = emu(ads_inputDRIA,MODEL_NAME,mole_frac,datalength,m_avg)
+        Cd_ads,uncertainty_ads = emu(ads_inputDRIA,MODEL_NAME,mole_frac,datalength,m_avg)
+        Cd_srf,uncertainty_srf = emu(srf_inputDRIA,MODEL_NAME,mole_frac,datalength,m_avg)
     
     elif GSI_MODEL == 2:
         ads_inputCLL = np.zeros([datalength,7])
@@ -149,8 +149,8 @@ def CdSetup(MODEL_NAME,GSI_MODEL,ads_model,surf_part_mass,Inputs,mole_frac,datal
         
         #Emulator
         print('Beginning Emulator')
-        Cd_ads = emu(ads_inputCLL,mole_frac,datalength,m_avg)
-        Cd_srf = emu(ads_inputCLL,mole_frac,datalength,m_avg)
+        Cd_ads,uncertainty_ads = emu(ads_inputCLL,mole_frac,datalength,m_avg)
+        Cd_srf,uncertainty_srf = emu(srf_inputCLL,mole_frac,datalength,m_avg)
         
     else:
         print('Input valid GSI Flag in Model_Evaluation.json')
@@ -172,8 +172,13 @@ def CdSetup(MODEL_NAME,GSI_MODEL,ads_model,surf_part_mass,Inputs,mole_frac,datal
         print('Enter valid ADS Model Flag')
     
     Cd_TOTAL = fsc[:,0]*Cd_ads[:,0] + (1.0-fsc[:,0])*Cd_srf[:,0]
+    CD_var = np.multiply(fsc**2,uncertainty_ads**2) + np.multiply((1-fsc)**2,uncertainty_srf**2)     # assuming covariance between CD_ads and CD_surf to be zero
+    Cd_STD = np.sqrt(CD_var)
     
-    return Cd_TOTAL
+    
+    
+    
+    return Cd_TOTAL, Cd_STD
 
 
 
@@ -365,12 +370,13 @@ def emu(INPUT,MODEL_NAME,mole_frac,datalength,m_avg):
     sigmacombined = np.array([sigma_H_Matern,sigma_He_Matern,sigma_N_Matern,sigma_N2_Matern,sigma_O_Matern,sigma_O2_Matern]).T    
 
     
-    Cd[:,0] = CD_net_mean_sampling[:,0]
-
+    Cd = CD_net_mean_sampling
+    uncertainty=CD_net_std_sampling
     os.chdir(basedir)
 
 
-    return Cd
+    return Cd, uncertainty
+
 
 
 
@@ -391,12 +397,13 @@ if __name__ == '__main__':
     
     #Calculate the Cd 
     print('Preparing Cd Calculation...')
-    RSMCd = CdSetup(MODEL_NAME,GSI_MODEL,ads_model,surf_part_mass,Inputs,mole_fractions,datalength)
-    # RSMA = are(basedir)
+    RSMCd, UNCERTAINTY = CdSetup(MODEL_NAME,GSI_MODEL,ads_model,surf_part_mass,Inputs,mole_fractions,datalength)
+    RSMA = area(basedir)
     #Save Results
     np.savetxt('Outputs/Cd_Results/'+MODEL_NAME+'_Cd_results.txt', RSMCd)   
-    # #Save Area Results
-    # np.savetext('Outputs/Projected_Area/'+MODEL_NAME+'_projectedarea.txt', RSMA)   
+    np.savetxt('Outputs/Cd_Results/'+MODEL_NAME+'_Uncertainty_Bounds.txt', UNCERTAINTY)  
+    #Save Area Results
+    np.savetext('Outputs/Projected_Area/'+MODEL_NAME+'_projectedarea.txt', RSMA)   
     
 
     
